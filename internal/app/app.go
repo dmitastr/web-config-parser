@@ -8,16 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
+	"web-config-parser/internal/analyzers"
 	"web-config-parser/internal/models"
 	"web-config-parser/internal/parsers"
-)
-
-type Level string
-
-const (
-	low    Level = "LOW"
-	high   Level = "HIGH"
-	medium Level = "MEDIUM"
 )
 
 type FileExtension string
@@ -32,24 +25,24 @@ var (
 	ErrAppNotFound          = errors.New("app not found")
 )
 
-type ParseResult struct {
-	Level        Level  `json:"level"`
-	ShortMessage string `json:"short_message"`
-	FullMessage  string `json:"full_message"`
-}
-
 type App struct {
-	log     *logrus.Logger
-	parsers map[FileExtension]parsers.Parser
-	config  *models.Config
+	configRaw any
+	log       *logrus.Logger
+	parsers   map[FileExtension]parsers.Parser
+	config    *models.Config
+	analyzers []analyzers.ConfigAnalyzer
 }
 
 func NewApp(log *logrus.Logger) *App {
+	plaintextSecretDetector := analyzers.NewPlaintextSecretDetector()
 	return &App{
 		log: log,
 		parsers: map[FileExtension]parsers.Parser{
 			jsonFormat: &parsers.JsonParser{},
 			yamlFormat: &parsers.YAMLParser{},
+		},
+		analyzers: []analyzers.ConfigAnalyzer{
+			plaintextSecretDetector,
 		},
 	}
 }
@@ -68,7 +61,7 @@ func (p *App) Load(r io.Reader, format FileExtension) error {
 	if err != nil {
 		return fmt.Errorf("parse config data: %w", err)
 	}
-	p.config = config
+	p.configRaw = config
 	return nil
 }
 
@@ -84,14 +77,14 @@ func (p *App) LoadFile(fileName string) error {
 	return p.Load(f, FileExtension(fileExt))
 }
 
-func (p *App) Validate() ([]*ParseResult, error) {
-	if p.config.App == nil {
-		warning := &ParseResult{
-			Level:        high,
-			ShortMessage: "app section is missing",
-			FullMessage:  "app section is missing",
+func (p *App) Validate() ([]models.Finding, error) {
+	result := make([]models.Finding, 0)
+	for _, analyzer := range p.analyzers {
+		findings, err := analyzer.Analyze(p.configRaw)
+		if err != nil {
+			return nil, err
 		}
-		return []*ParseResult{warning}, nil
+		result = append(result, findings...)
 	}
-	return nil, nil
+	return result, nil
 }

@@ -1,30 +1,53 @@
 {
-  "app1": {
+  "app": {
     "name": "MyWebApp",
-    "version": "2.1.0",
     "env": "production",
     "debug": false,
-    "timezone": "Europe/Moscow"
+    "version": "1.4.2"
   },
   "server": {
     "host": "0.0.0.0",
     "port": 8080,
-    "read_timeout": 30,
-    "write_timeout": 30
-  },
-  "database": {
-    "primary": {
-      "driver": "postgresql",
-      "host": "localhost",
-      "port": 5432,
-      "database": "myapp_db",
-      "username": "app_user",
-      "password": "${DB_PASSWORD}",
-      "max_connections": 100
+    "read_timeout": "5s",
+    "write_timeout": "10s",
+    "idle_timeout": "60s",
+    "tls": {
+      "enabled": true,
+      "cert_file": "/etc/certs/server.crt",
+      "key_file": "/etc/certs/server.key"
     }
   },
-  "jwt": {
-    "secret": "${JWT_SECRET}",
-    "expire_hours": 24
+  "database": {
+    "driver": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "user": "app_user",
+    "password": "changeme",
+    "name": "myapp_db",
+    "sslmode": "disable",
+    "max_open_conns": 25,
+    "max_idle_conns": 5,
+    "conn_max_lifetime": "30m"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout"
+  },
+  "cors": {
+    "allowed_origins": ["https://example.com", "https://admin.example.com"],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE"],
+    "allow_credentials": true
+  },
+  "auth": {
+    "jwt_secret": "supersecretkey",
+    "access_token_ttl": "15m",
+    "refresh_token_ttl": "168h"
   }
 }
