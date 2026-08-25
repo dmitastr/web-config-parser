@@ -26,24 +26,21 @@ var (
 )
 
 type App struct {
-	configRaw any
-	log       *logrus.Logger
-	parsers   map[FileExtension]parsers.Parser
-	config    *models.Config
-	analyzers []analyzers.ConfigAnalyzer
+	configRaw      any
+	log            *logrus.Logger
+	parsers        map[FileExtension]parsers.Parser
+	configAnalyzer *analyzers.ConfigAnalyzer
+	source         string
 }
 
-func NewApp(log *logrus.Logger) *App {
-	plaintextSecretDetector := analyzers.NewPlaintextSecretDetector()
+func NewApp(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger) *App {
 	return &App{
 		log: log,
 		parsers: map[FileExtension]parsers.Parser{
 			jsonFormat: &parsers.JsonParser{},
 			yamlFormat: &parsers.YAMLParser{},
 		},
-		analyzers: []analyzers.ConfigAnalyzer{
-			plaintextSecretDetector,
-		},
+		configAnalyzer: analyzer,
 	}
 }
 
@@ -62,10 +59,15 @@ func (p *App) Load(r io.Reader, format FileExtension) error {
 		return fmt.Errorf("parse config data: %w", err)
 	}
 	p.configRaw = config
+
+	if p.source == "" {
+		p.source = "stdin"
+	}
 	return nil
 }
 
 func (p *App) LoadFile(fileName string) error {
+	p.source = fileName
 	f, err := os.Open(fileName)
 	if err != nil {
 		return fmt.Errorf("open config file: %w", err)
@@ -78,13 +80,9 @@ func (p *App) LoadFile(fileName string) error {
 }
 
 func (p *App) Validate() ([]models.Finding, error) {
-	result := make([]models.Finding, 0)
-	for _, analyzer := range p.analyzers {
-		findings, err := analyzer.Analyze(p.configRaw)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, findings...)
+	result, err := p.configAnalyzer.Analyze(p.configRaw)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }

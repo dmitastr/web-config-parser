@@ -6,19 +6,21 @@ import (
 	"web-config-parser/internal/models"
 )
 
+type Analyzer interface {
+	FieldMatch(key string, path string) bool // функция для фильтрации только определённых полей конфига
+	IsValid(value any) bool                  // функция для валидации значения, ошибка=false
+	GetFinding() models.Finding              // получить шаблон сообщения об уязвимости
+	FormatValue(value any) string            //  функция для формата значения поля, например, для скрытия паролей
+}
+
 // ConfigAnalyzer позволяет рекурсивно обойти конфиг и выявить потенциальные уязвимости
 // в заданных полях по заданному правилу
 type ConfigAnalyzer struct {
-	fieldMatchFunc      func(key string, path string) bool // функция для фильтрации только определённых полей конфига
-	isValidFunc         func(any) bool                     // функция для валидации значения, ошибка=false
-	level               models.Level                       // критичность уязвимости
-	shortMessage        string                             // краткое сообщение об уязвимости
-	fullMessageTemplate string                             // полное сообщение с рекомендацией, содержит в себе путь поля внутри конфига и отформатированное значение
-	valueFormatFunc     func(any) string                   // функция для печати значения поля, например, для скрытия паролей
+	analyzers []Analyzer
 }
 
-func NewConfigAnalyzer() *ConfigAnalyzer {
-	return &ConfigAnalyzer{}
+func NewConfigAnalyzer(analyzers ...Analyzer) *ConfigAnalyzer {
+	return &ConfigAnalyzer{analyzers: analyzers}
 }
 func (c *ConfigAnalyzer) Analyze(config any) ([]models.Finding, error) {
 	var findings []models.Finding
@@ -34,20 +36,16 @@ func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]models.
 		for key, val := range v {
 			childPath := joinPath(path, key)
 
-			if c.fieldMatchFunc(key, childPath) {
-				if !c.isValidFunc(val) {
-					var fullMessage string
-					if c.valueFormatFunc != nil {
-						fullMessage = fmt.Sprintf(c.fullMessageTemplate, childPath, c.valueFormatFunc(val))
-					} else {
-						fullMessage = fmt.Sprintf(c.fullMessageTemplate, childPath, val)
+			for _, analyzer := range c.analyzers {
+				if analyzer.FieldMatch(key, childPath) {
+					if !analyzer.IsValid(val) {
+						value := analyzer.FormatValue(val)
+						finding := analyzer.GetFinding()
+						finding.Value = value
+						finding.Path = childPath
+
+						*findings = append(*findings, finding)
 					}
-					*findings = append(*findings, models.Finding{
-						Level:        c.level,
-						ShortMessage: c.shortMessage,
-						FullMessage:  fullMessage,
-					})
-					continue
 				}
 			}
 
