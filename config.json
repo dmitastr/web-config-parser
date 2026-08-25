@@ -1,5 +1,5 @@
 {
-  "app": {
+  "app1": {
     "name": "MyWebApp",
     "version": "2.1.0",
     "env": "production",
