@@ -29,6 +29,7 @@ func main() {
 	analyzer := analyzers.NewConfigAnalyzer(
 		&analyzers.HostAnalyzer{},
 		&analyzers.PlaintextSecretAnalyzer{},
+		&analyzers.DebugModeAnalyzer{},
 	)
 	configAnalyzerApp := app.NewApp(analyzer, log)
 
@@ -64,7 +65,8 @@ func main() {
 
 	if len(results) != 0 {
 		for _, result := range results {
-			fmt.Printf("%s: %s | %s\n", result.Level, result.ShortMessage, result.FullMessage)
+			fmt.Printf("%s: %s | %s, path: %s, value: %v\n",
+				result.Level, result.ShortMessage, result.FullMessage, result.Path, result.Value)
 		}
 		if !silent {
 			os.Exit(1)

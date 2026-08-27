@@ -13,7 +13,7 @@ func (p PlaintextSecretAnalyzer) FieldMatch(field string, _ string) bool {
 	return sensitiveFieldPattern.MatchString(field) && !sensitiveFieldMinusPattern.MatchString(field)
 }
 
-func (p PlaintextSecretAnalyzer) IsValid(value any) bool {
+func (p PlaintextSecretAnalyzer) IsValid(value any, field string, path string) bool {
 	if strVal, ok := value.(string); ok {
 		for _, re := range placeholderPatterns {
 			if re.MatchString(strVal) {
@@ -46,7 +46,7 @@ func (p PlaintextSecretAnalyzer) FormatValue(s any) string {
 
 const (
 	shotMessageTemplate = "пароль в открытом виде"
-	fullMessageTemplate = "в поле конфига пароль хранится в открытом виде"
+	fullMessageTemplate = "в поле конфига пароль хранится в открытом виде, требуется замена на переменную окружения"
 )
 
 var sensitiveFieldPattern = regexp.MustCompile(

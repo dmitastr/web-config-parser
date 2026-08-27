@@ -23,7 +23,7 @@ func (h *HostAnalyzer) FieldMatch(field string, _ string) bool {
 
 var hostKeyPattern = regexp.MustCompile(`(?i)(^host$|_host$|^bind$|^address$|^addr$|^listen)`)
 
-func (h *HostAnalyzer) IsValid(value any) bool {
+func (h *HostAnalyzer) IsValid(value any, field string, path string) bool {
 	if strVal, ok := value.(string); ok {
 		ip := net.ParseIP(strVal)
 		if ip == nil {

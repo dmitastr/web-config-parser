@@ -7,10 +7,10 @@ import (
 )
 
 type Analyzer interface {
-	FieldMatch(key string, path string) bool // функция для фильтрации только определённых полей конфига
-	IsValid(value any) bool                  // функция для валидации значения, ошибка=false
-	GetFinding() models.Finding              // получить шаблон сообщения об уязвимости
-	FormatValue(value any) string            //  функция для формата значения поля, например, для скрытия паролей
+	FieldMatch(key string, path string) bool           // функция для фильтрации только определённых полей конфига
+	IsValid(value any, field string, path string) bool // функция для валидации значения, ошибка=false
+	GetFinding() models.Finding                        // получить шаблон сообщения об уязвимости
+	FormatValue(value any) string                      //  функция для формата значения поля, например, для скрытия паролей
 }
 
 // ConfigAnalyzer позволяет рекурсивно обойти конфиг и выявить потенциальные уязвимости
@@ -38,7 +38,7 @@ func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]models.
 
 			for _, analyzer := range c.analyzers {
 				if analyzer.FieldMatch(key, childPath) {
-					if !analyzer.IsValid(val) {
+					if !analyzer.IsValid(val, "", "") {
 						value := analyzer.FormatValue(val)
 						finding := analyzer.GetFinding()
 						finding.Value = value
