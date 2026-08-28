@@ -13,27 +13,23 @@ func (p PlaintextSecretAnalyzer) FieldMatch(field string, _ string) bool {
 	return sensitiveFieldPattern.MatchString(field) && !sensitiveFieldMinusPattern.MatchString(field)
 }
 
-func (p PlaintextSecretAnalyzer) IsValid(value any, field string, path string) bool {
+func (p PlaintextSecretAnalyzer) GetFinding(value any, field string, path string) (*models.Finding, bool) {
 	if strVal, ok := value.(string); ok {
 		for _, re := range placeholderPatterns {
 			if re.MatchString(strVal) {
-				return true
+				return nil, true
 			}
 		}
-		return false
+		return &models.Finding{
+			Level:        models.LevelHigh,
+			ShortMessage: shotMessageTemplate,
+			FullMessage:  fullMessageTemplate,
+		}, false
 	}
-	return true
+	return nil, true
 }
 
-func (p PlaintextSecretAnalyzer) GetFinding() models.Finding {
-	return models.Finding{
-		Level:        models.LevelHigh,
-		ShortMessage: shotMessageTemplate,
-		FullMessage:  fullMessageTemplate,
-	}
-}
-
-func (p PlaintextSecretAnalyzer) FormatValue(s any) string {
+func (p PlaintextSecretAnalyzer) formatValue(s any) string {
 	strVal, ok := s.(string)
 	if !ok {
 		return "***"

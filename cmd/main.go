@@ -30,6 +30,8 @@ func main() {
 		&analyzers.HostAnalyzer{},
 		&analyzers.PlaintextSecretAnalyzer{},
 		&analyzers.DebugModeAnalyzer{},
+		&analyzers.OldCipherAlgoAnalyzer{},
+		&analyzers.TLSDisableAnalyzer{},
 	)
 	configAnalyzerApp := app.NewApp(analyzer, log)
 

@@ -79,8 +79,8 @@ func (p *App) LoadFile(fileName string) error {
 	return p.Load(f, FileExtension(fileExt))
 }
 
-func (p *App) Validate() ([]models.Finding, error) {
-	result, err := p.configAnalyzer.Analyze(p.configRaw)
+func (p *App) Validate() ([]*models.Finding, error) {
+	result, err := p.configAnalyzer.Analyze(p.configRaw, nil)
 	if err != nil {
 		return nil, err
 	}

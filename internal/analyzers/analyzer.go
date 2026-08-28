@@ -7,29 +7,29 @@ import (
 )
 
 type Analyzer interface {
-	FieldMatch(key string, path string) bool           // функция для фильтрации только определённых полей конфига
-	IsValid(value any, field string, path string) bool // функция для валидации значения, ошибка=false
-	GetFinding() models.Finding                        // получить шаблон сообщения об уязвимости
-	FormatValue(value any) string                      //  функция для формата значения поля, например, для скрытия паролей
+	FieldMatch(key string, path string) bool                                                 // функция для фильтрации только определённых полей конфига
+	GetFinding(value any, field string, path string) (finding *models.Finding, isValid bool) // функция для валидации значения, ошибка=false
 }
 
 // ConfigAnalyzer позволяет рекурсивно обойти конфиг и выявить потенциальные уязвимости
 // в заданных полях по заданному правилу
 type ConfigAnalyzer struct {
 	analyzers []Analyzer
+	results   map[string]models.Result
 }
 
 func NewConfigAnalyzer(analyzers ...Analyzer) *ConfigAnalyzer {
 	return &ConfigAnalyzer{analyzers: analyzers}
 }
-func (c *ConfigAnalyzer) Analyze(config any) ([]models.Finding, error) {
-	var findings []models.Finding
+func (c *ConfigAnalyzer) Analyze(config any, source *models.Source) ([]*models.Finding, error) {
+
+	var findings []*models.Finding
 	c.walk(config, "", &findings)
 
 	return findings, nil
 }
 
-func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]models.Finding) {
+func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]*models.Finding) {
 	switch v := node.(type) {
 
 	case map[string]interface{}:
@@ -38,11 +38,7 @@ func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]models.
 
 			for _, analyzer := range c.analyzers {
 				if analyzer.FieldMatch(key, childPath) {
-					if !analyzer.IsValid(val, "", "") {
-						value := analyzer.FormatValue(val)
-						finding := analyzer.GetFinding()
-						finding.Value = value
-						finding.Path = childPath
+					if finding, ok := analyzer.GetFinding(val, "", ""); !ok {
 
 						*findings = append(*findings, finding)
 					}

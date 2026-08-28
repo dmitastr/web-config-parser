@@ -23,23 +23,19 @@ func (h *HostAnalyzer) FieldMatch(field string, _ string) bool {
 
 var hostKeyPattern = regexp.MustCompile(`(?i)(^host$|_host$|^bind$|^address$|^addr$|^listen)`)
 
-func (h *HostAnalyzer) IsValid(value any, field string, path string) bool {
+func (h *HostAnalyzer) GetFinding(value any, field string, path string) (*models.Finding, bool) {
 	if strVal, ok := value.(string); ok {
 		ip := net.ParseIP(strVal)
 		if ip == nil {
-			return true
+			return nil, true
 		}
-		return !ip.IsUnspecified()
-	}
-	return true
-}
-
-func (h *HostAnalyzer) GetFinding() models.Finding {
-	return models.Finding{
-		Level:        models.LevelMedium,
-		ShortMessage: "открытый 0.0.0.0",
-		FullMessage: `0.0.0.0 использован в качестве адреса для биндинга сервера, сервис может случайно 
+		return &models.Finding{
+			Level:        models.LevelMedium,
+			ShortMessage: "открытый 0.0.0.0",
+			FullMessage: `0.0.0.0 использован в качестве адреса для биндинга сервера, сервис может случайно 
 оказывается доступен из интернета. Рекомендации по исправлению - явно указать нужный адрес, включить TLS, использовать
 Reverse proxy`,
+		}, !ip.IsUnspecified()
 	}
+	return nil, true
 }
