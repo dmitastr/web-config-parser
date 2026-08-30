@@ -21,6 +21,7 @@ type FileExtension string
 const (
 	jsonFormat FileExtension = "json"
 	yamlFormat FileExtension = "yaml"
+	ymlFormat  FileExtension = "yml"
 )
 
 var (
@@ -42,20 +43,21 @@ func NewApp(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger) *App {
 		parsers: map[FileExtension]parsers.Parser{
 			jsonFormat: &parsers.JsonParser{},
 			yamlFormat: &parsers.YAMLParser{},
+			ymlFormat:  &parsers.YAMLParser{},
 		},
 		configAnalyzer: analyzer,
 	}
 }
 
 func (p *App) Load(r io.ReadCloser, format FileExtension, sourceName string) error {
-	config, err := p.load(r, format)
+	cfg, err := p.load(r, format)
 	if err != nil {
 		return err
 	}
 
 	src := &models.Source{
 		Path:    sourceName,
-		Content: config,
+		Content: cfg,
 	}
 	p.sources = append(p.sources, src)
 	return nil
@@ -64,19 +66,19 @@ func (p *App) Load(r io.ReadCloser, format FileExtension, sourceName string) err
 func (p *App) load(r io.ReadCloser, format FileExtension) (any, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("read config data: %w", err)
+		return nil, fmt.Errorf("read cfg data: %w", err)
 	}
 
-	parser, ok := p.parsers[format]
+	parser, ok := p.GetParser(format)
 	if !ok {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidFileExtension, format)
 	}
-	config, err := parser.Parse(data)
+	cfg, err := parser.Parse(data)
 	if err != nil {
-		return nil, fmt.Errorf("parse config data: %w", err)
+		return nil, fmt.Errorf("parse cfg data: %w", err)
 	}
 
-	return config, nil
+	return cfg, nil
 }
 
 func (p *App) LoadFile(fileName string) error {
@@ -194,4 +196,9 @@ func (p *App) LoadSources(opts config.CliOptions) error {
 	default:
 		return fmt.Errorf("укажите путь к файлу конфига, --dir или флаг --stdin")
 	}
+}
+
+func (p *App) GetParser(format FileExtension) (parsers.Parser, bool) {
+	parser, ok := p.parsers[format]
+	return parser, ok
 }
