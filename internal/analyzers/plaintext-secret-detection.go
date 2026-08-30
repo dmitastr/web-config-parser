@@ -21,6 +21,8 @@ func (p PlaintextSecretAnalyzer) GetFinding(value any, field string, path string
 			}
 		}
 		return &models.Finding{
+			Value:        p.formatValue(value),
+			Path:         path,
 			Level:        models.LevelHigh,
 			ShortMessage: shotMessageTemplate,
 			FullMessage:  fullMessageTemplate,

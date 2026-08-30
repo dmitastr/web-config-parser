@@ -21,7 +21,7 @@ type ConfigAnalyzer struct {
 func NewConfigAnalyzer(analyzers ...Analyzer) *ConfigAnalyzer {
 	return &ConfigAnalyzer{analyzers: analyzers}
 }
-func (c *ConfigAnalyzer) Analyze(config any, source *models.Source) ([]*models.Finding, error) {
+func (c *ConfigAnalyzer) Analyze(config any) ([]*models.Finding, error) {
 
 	var findings []*models.Finding
 	c.walk(config, "", &findings)
@@ -38,7 +38,7 @@ func (c *ConfigAnalyzer) walk(node interface{}, path string, findings *[]*models
 
 			for _, analyzer := range c.analyzers {
 				if analyzer.FieldMatch(key, childPath) {
-					if finding, ok := analyzer.GetFinding(val, "", ""); !ok {
+					if finding, ok := analyzer.GetFinding(val, key, childPath); !ok {
 
 						*findings = append(*findings, finding)
 					}

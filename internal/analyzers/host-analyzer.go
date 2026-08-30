@@ -30,6 +30,8 @@ func (h *HostAnalyzer) GetFinding(value any, field string, path string) (*models
 			return nil, true
 		}
 		return &models.Finding{
+			Value:        strVal,
+			Path:         path,
 			Level:        models.LevelMedium,
 			ShortMessage: "открытый 0.0.0.0",
 			FullMessage: `0.0.0.0 использован в качестве адреса для биндинга сервера, сервис может случайно 

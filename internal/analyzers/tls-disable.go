@@ -28,10 +28,12 @@ func (a *TLSDisableAnalyzer) FieldMatch(field string, _ string) bool {
 	return insecureFlagPattern.MatchString(field) && verifyFlagPattern.MatchString(field)
 }
 
-func (a *TLSDisableAnalyzer) GetFinding(value any, field string, _ string) (*models.Finding, bool) {
+func (a *TLSDisableAnalyzer) GetFinding(value any, field string, path string) (*models.Finding, bool) {
 	if boolVal, ok := value.(bool); ok {
 		isFinding := (!boolVal && verifyFlagPattern.MatchString(field)) || (insecureFlagPattern.MatchString(field) && boolVal)
 		return &models.Finding{
+			Value:        boolVal,
+			Path:         path,
 			Level:        models.LevelMedium,
 			ShortMessage: "отключенная TLS-проверка",
 			FullMessage: `когда клиентская часть приложения настроена игнорировать проверку сертификата сервера, 

@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"web-config-parser/internal/analyzers"
+	"web-config-parser/internal/config"
 	"web-config-parser/internal/models"
 	"web-config-parser/internal/parsers"
 )
@@ -16,8 +19,8 @@ import (
 type FileExtension string
 
 const (
-	jsonFormat FileExtension = ".json"
-	yamlFormat FileExtension = ".yaml"
+	jsonFormat FileExtension = "json"
+	yamlFormat FileExtension = "yaml"
 )
 
 var (
@@ -26,11 +29,11 @@ var (
 )
 
 type App struct {
-	configRaw      any
 	log            *logrus.Logger
 	parsers        map[FileExtension]parsers.Parser
 	configAnalyzer *analyzers.ConfigAnalyzer
-	source         string
+	sources        []*models.Source
+	Results        []*models.Result
 }
 
 func NewApp(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger) *App {
@@ -44,45 +47,151 @@ func NewApp(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger) *App {
 	}
 }
 
-func (p *App) Load(r io.Reader, format FileExtension) error {
+func (p *App) Load(r io.ReadCloser, format FileExtension, sourceName string) error {
+	config, err := p.load(r, format)
+	if err != nil {
+		return err
+	}
+
+	src := &models.Source{
+		Path:    sourceName,
+		Content: config,
+	}
+	p.sources = append(p.sources, src)
+	return nil
+}
+
+func (p *App) load(r io.ReadCloser, format FileExtension) (any, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("read config data: %w", err)
+		return nil, fmt.Errorf("read config data: %w", err)
 	}
 
 	parser, ok := p.parsers[format]
 	if !ok {
-		return fmt.Errorf("%w: %s", ErrInvalidFileExtension, format)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidFileExtension, format)
 	}
 	config, err := parser.Parse(data)
 	if err != nil {
-		return fmt.Errorf("parse config data: %w", err)
+		return nil, fmt.Errorf("parse config data: %w", err)
 	}
-	p.configRaw = config
 
-	if p.source == "" {
-		p.source = "stdin"
-	}
-	return nil
+	return config, nil
 }
 
 func (p *App) LoadFile(fileName string) error {
-	p.source = fileName
-	f, err := os.Open(fileName)
+	f, err := p.loadFile(fileName)
 	if err != nil {
 		return fmt.Errorf("open config file: %w", err)
 	}
 	defer f.Close()
 
-	fileExt := filepath.Ext(fileName)
+	fileExt := getFileExtention(fileName)
 
-	return p.Load(f, FileExtension(fileExt))
+	return p.Load(f, fileExt, fileName)
 }
 
-func (p *App) Validate() ([]*models.Finding, error) {
-	result, err := p.configAnalyzer.Analyze(p.configRaw, nil)
+func (p *App) loadFile(fileName string) (io.ReadCloser, error) {
+	return os.Open(fileName)
+}
+
+func (p *App) LoadDir(dir string) error {
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		ext := getFileExtention(path)
+		if _, ok := p.parsers[ext]; ok && !d.IsDir() {
+			p.sources = append(p.sources, &models.Source{Path: path})
+		}
+		return nil
+	})
+
+	if err != nil {
+		p.log.WithError(err).Error("failed to walk dir")
+		return err
+	}
+	return nil
+}
+
+func (p *App) Validate() ([]*models.Result, error) {
+	results := make([]*models.Result, 0)
+	for _, src := range p.sources {
+		results = append(results, p.validateSource(src))
+	}
+	return results, nil
+}
+
+func (p *App) validateSource(src *models.Source) *models.Result {
+	if src.Content == nil {
+		content, err := p.readContent(src.Path)
+		if err != nil {
+			return &models.Result{Source: src.Path, Error: err}
+		}
+		src.Content = content
+	}
+
+	findings, err := p.configAnalyzer.Analyze(src.Content)
+	return &models.Result{Source: src.Path, Findings: findings, Error: err}
+}
+
+func (p *App) readContent(path string) (any, error) {
+	f, err := p.loadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	defer f.Close()
+
+	ext := getFileExtention(path)
+	return p.load(f, ext)
+}
+
+func getFileExtention(fName string) FileExtension {
+	ext := filepath.Ext(fName)
+	return FileExtension(strings.TrimPrefix(ext, "."))
+}
+
+func (p *App) LoadSources(opts config.CliOptions) error {
+	sourcesSelected := 0
+	if opts.Dir != "" {
+		sourcesSelected++
+	}
+	if opts.UseStdin {
+		sourcesSelected++
+	}
+	if len(opts.Args) > 0 {
+		sourcesSelected++
+	}
+
+	switch {
+	case sourcesSelected > 1:
+		return fmt.Errorf("укажите только один источник конфига: --dir, --stdin или путь к файлу")
+
+	case len(opts.Args) > 1:
+		return fmt.Errorf("указано несколько файлов (%v), поддерживается только один путь", opts.Args)
+
+	case opts.Dir != "":
+		if err := p.LoadDir(opts.Dir); err != nil {
+			return fmt.Errorf("загрузка директории %q: %w", opts.Dir, err)
+		}
+		return nil
+
+	case opts.UseStdin:
+		if opts.Format == "" {
+			return fmt.Errorf("при использовании --stdin обязателен флаг --format (json|yaml)")
+		}
+		if err := p.Load(os.Stdin, FileExtension(opts.Format), "stdin"); err != nil {
+			return fmt.Errorf("загрузка конфига из stdin: %w", err)
+		}
+		return nil
+
+	case len(opts.Args) == 1:
+		if err := p.LoadFile(opts.Args[0]); err != nil {
+			return fmt.Errorf("загрузка конфига из файла %s: %w", opts.Args[0], err)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("укажите путь к файлу конфига, --dir или флаг --stdin")
+	}
 }

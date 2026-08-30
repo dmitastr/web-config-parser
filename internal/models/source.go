@@ -1,6 +1,7 @@
 package models
 
 type Source struct {
-	Name    string
+	Path    string
 	Content any
+	Finding []*Finding
 }

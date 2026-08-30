@@ -28,6 +28,8 @@ func (a *DebugModeAnalyzer) GetFinding(value any, field string, path string) (*m
 			Level:        models.LevelMedium,
 			ShortMessage: "debug mode в продакшн",
 			FullMessage:  `включен debug mode, потенциальный источник информации для атакующего`,
+			Value:        boolVal,
+			Path:         path,
 		}, !boolVal
 	}
 	return nil, true
