@@ -1,0 +1,56 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  listen: 0.0.0.0
+
+  tls:
+    enabled: true
+    version: TLS 1.0
+    cipher: AES-128-ECB
+    hash_algorithm: MD5
+    signing_method: none
+
+database:
+  host: 0.0.0.0
+  port: 5432
+  username: admin
+  password: admin123
+
+authentication:
+  algorithm: MD5
+  password_hash: SHA-1
+  token:
+    algorithm: none
+    signing_method: HS1
+
+ssh:
+  host: 0.0.0.0
+  port: 22
+  host_key_algorithm: ssh-dss
+  encryption: 3DES
+
+logging:
+  level: debug
+  output: /var/log/webapp.log
+
+cors:
+  enabled: true
+  allowed_origins:
+    - "*"
+
+security:
+  ssl:
+    version: SSLv3
+  encryption:
+    algorithm: RC4
+    mode: ECB
+
+network:
+  bind: "::"
+  address: 0.0.0.0
+  listen_address: 0.0.0.0
+
+legacy:
+  cipher: RC2
+  hash_method: SHA1
+  crypto: DES
