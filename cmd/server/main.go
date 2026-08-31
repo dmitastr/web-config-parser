@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 
-	"web-config-parser/internal/analyzers"
 	"web-config-parser/internal/logging"
 	"web-config-parser/internal/server"
 )
@@ -46,15 +45,7 @@ func main() {
 
 	log := logging.New(parseLogLevel(opts.logLevel))
 
-	analyzer := analyzers.NewConfigAnalyzer(
-		&analyzers.HostAnalyzer{},
-		&analyzers.PlaintextSecretAnalyzer{},
-		&analyzers.DebugModeAnalyzer{},
-		&analyzers.OldCipherAlgoAnalyzer{},
-		&analyzers.TLSDisableAnalyzer{},
-	)
-
-	handler := server.NewHandler(analyzer, log, opts.maxBodyBytes)
+	handler := server.NewHandler(log, opts.maxBodyBytes)
 
 	srv := server.New(server.Config{
 		Host:            opts.host,

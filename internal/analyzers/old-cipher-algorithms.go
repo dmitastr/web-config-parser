@@ -1,7 +1,6 @@
 package analyzers
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -40,15 +39,11 @@ var deprecatedAlgorithms = map[string]string{
 	"ecb": "не скрывает паттерны в данных, используйте GCM/CBC с корректным IV",
 
 	// SSH
-	"ssh-dss": "DSA устарел и считается слабым",
-	"dsa":     "признан устаревшим NIST",
+	"sshdss": "DSA устарел и считается слабым",
+	"dsa":    "признан устаревшим NIST",
 }
 
 type OldCipherAlgoAnalyzer struct {
-}
-
-func (a *OldCipherAlgoAnalyzer) FormatValue(value any) string {
-	return fmt.Sprintf("%v", value)
 }
 
 func (a *OldCipherAlgoAnalyzer) FieldMatch(field string, _ string) bool {
@@ -57,7 +52,7 @@ func (a *OldCipherAlgoAnalyzer) FieldMatch(field string, _ string) bool {
 
 func (a *OldCipherAlgoAnalyzer) GetFinding(value any, _ string, path string) (*models.Finding, bool) {
 	strValue, ok := value.(string)
-	if ok {
+	if !ok {
 		return nil, true
 	}
 	normalized := normalizeAlgoName(strValue)

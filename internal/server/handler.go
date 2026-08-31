@@ -9,7 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"web-config-parser/internal/analyzers"
 	"web-config-parser/internal/app"
 )
 
@@ -22,15 +21,13 @@ type errorResponse struct {
 // Analyzer переиспользуется между запросами (предполагается, что он не хранит
 // состояние конкретного конфига — состояние живёт в отдельном app.App на запрос).
 type Handler struct {
-	analyzer     *analyzers.ConfigAnalyzer
 	log          *logrus.Logger
 	maxBodyBytes int64
 }
 
 // NewHandler создаёт Handler с уже собранным анализатором и логгером.
-func NewHandler(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger, maxBodyBytes int64) *Handler {
+func NewHandler(log *logrus.Logger, maxBodyBytes int64) *Handler {
 	return &Handler{
-		analyzer:     analyzer,
 		log:          log,
 		maxBodyBytes: maxBodyBytes,
 	}
@@ -64,7 +61,7 @@ func (h *Handler) handleValidate(w http.ResponseWriter, r *http.Request) {
 		format = r.Header.Get("X-Config-Format")
 	}
 	configFormat := app.FileExtension(format)
-	configApp := app.NewApp(h.analyzer, h.log)
+	configApp := app.NewDefault(h.log)
 	if _, ok := configApp.GetParser(configFormat); !ok {
 		h.writeError(w, http.StatusBadRequest, "неподдерживаемый или не указанный параметр format")
 		return

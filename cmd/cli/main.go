@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"web-config-parser/internal/analyzers"
 	"web-config-parser/internal/app"
 	"web-config-parser/internal/config"
 	"web-config-parser/internal/logging"
@@ -16,14 +15,8 @@ func main() {
 	opts := config.ParseFlags()
 
 	log := logging.New(logrus.DebugLevel)
-	analyzer := analyzers.NewConfigAnalyzer(
-		&analyzers.HostAnalyzer{},
-		&analyzers.PlaintextSecretAnalyzer{},
-		&analyzers.DebugModeAnalyzer{},
-		&analyzers.OldCipherAlgoAnalyzer{},
-		&analyzers.TLSDisableAnalyzer{},
-	)
-	configAnalyzerApp := app.NewApp(analyzer, log)
+
+	configAnalyzerApp := app.NewDefault(log)
 	if err := configAnalyzerApp.LoadSources(opts); err != nil {
 		log.WithError(err).Error("не удалось загрузить конфиг")
 		os.Exit(1)

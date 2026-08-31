@@ -37,6 +37,17 @@ type App struct {
 	Results        []*models.Result
 }
 
+func NewDefault(log *logrus.Logger) *App {
+	analyzer := analyzers.NewConfigAnalyzer(
+		&analyzers.HostAnalyzer{},
+		&analyzers.PlaintextSecretAnalyzer{},
+		&analyzers.DebugModeAnalyzer{},
+		&analyzers.OldCipherAlgoAnalyzer{},
+		&analyzers.TLSDisableAnalyzer{},
+	)
+	return NewApp(analyzer, log)
+}
+
 func NewApp(analyzer *analyzers.ConfigAnalyzer, log *logrus.Logger) *App {
 	return &App{
 		log: log,
