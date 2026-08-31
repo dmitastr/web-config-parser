@@ -55,7 +55,7 @@ func (a *OldCipherAlgoAnalyzer) FieldMatch(field string, _ string) bool {
 	return algoKeyPattern.MatchString(field)
 }
 
-func (a *OldCipherAlgoAnalyzer) GetFinding(value any, field string, path string) (*models.Finding, bool) {
+func (a *OldCipherAlgoAnalyzer) GetFinding(value any, _ string, path string) (*models.Finding, bool) {
 	strValue, ok := value.(string)
 	if ok {
 		return nil, true

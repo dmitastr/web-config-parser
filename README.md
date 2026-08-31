@@ -10,8 +10,9 @@
 
 ```
 .
-├── main.go                 # точка входа CLI
 ├── cmd/
+│   └── cli/
+│       └── main.go         # точка входа CLI
 │   └── server/
 │       └── main.go         # точка входа HTTP-сервера
 ├── internal/
@@ -43,12 +44,12 @@ cat config.yaml | ./bin/configapp --stdin --format yaml
 ./bin/configapp --dir ./configs
 ```
 
-| Флаг | Описание |
-|---|---|
-| `--stdin` | читать конфиг из стандартного ввода вместо файла |
+| Флаг           | Описание                                                                  |
+|----------------|---------------------------------------------------------------------------|
+| `--stdin`      | читать конфиг из стандартного ввода вместо файла                          |
 | `-f, --format` | формат при чтении из stdin: `json`/`yaml` (обязателен вместе с `--stdin`) |
-| `-d, --dir` | путь к директории для рекурсивного обхода конфигов |
-| `-s, --silent` | не завершать процесс с ненулевым кодом при найденных проблемах |
+| `-d, --dir`    | путь к директории для рекурсивного обхода конфигов                        |
+| `-s, --silent` | не завершать процесс с ненулевым кодом при найденных проблемах            |
 
 Код завершения: `0` — проблем не найдено, `1` — найдены findings или ошибки обработки.
 
@@ -72,27 +73,27 @@ curl -X POST 'http://localhost:8080/validate?format=json' \
 
 Каждый флаг можно задать через переменную окружения; флаг имеет приоритет.
 
-| Флаг | Env | По умолчанию |
-|---|---|---|
-| `--host` | `SERVER_HOST` | `127.0.0.1` |
-| `--port` | `SERVER_PORT` | `8080` |
-| `--read-timeout` | `SERVER_READ_TIMEOUT` | `5s` |
-| `--write-timeout` | `SERVER_WRITE_TIMEOUT` | `10s` |
-| `--idle-timeout` | `SERVER_IDLE_TIMEOUT` | `60s` |
-| `--shutdown-timeout` | `SERVER_SHUTDOWN_TIMEOUT` | `10s` |
-| `--max-body-bytes` | `SERVER_MAX_BODY_BYTES` | `5242880` (5 MiB) |
-| `--log-level` | `SERVER_LOG_LEVEL` | `info` |
+| Флаг                 | Env                       | По умолчанию      |
+|----------------------|---------------------------|-------------------|
+| `--host`             | `SERVER_HOST`             | `127.0.0.1`       |
+| `--port`             | `SERVER_PORT`             | `8080`            |
+| `--read-timeout`     | `SERVER_READ_TIMEOUT`     | `5s`              |
+| `--write-timeout`    | `SERVER_WRITE_TIMEOUT`    | `10s`             |
+| `--idle-timeout`     | `SERVER_IDLE_TIMEOUT`     | `60s`             |
+| `--shutdown-timeout` | `SERVER_SHUTDOWN_TIMEOUT` | `10s`             |
+| `--max-body-bytes`   | `SERVER_MAX_BODY_BYTES`   | `5242880` (5 MiB) |
+| `--log-level`        | `SERVER_LOG_LEVEL`        | `info`            |
 
 Сервер поддерживает graceful shutdown по `SIGINT`/`SIGTERM`.
 
 ## Проверки (analyzers)
 
-| Анализатор | Что ищет |
-|---|---|
-| `HostAnalyzer` | бинды на все интерфейсы (`0.0.0.0`) без ограничений |
-| `PlaintextSecretAnalyzer` | пароли/токены/ключи в открытом виде вместо плейсхолдеров окружения |
-| `DebugModeAnalyzer` | включённый debug-режим, verbose-логирование, открытые debug-эндпоинты |
-| `TLSDisableAnalyzer` | отключённую проверку TLS-сертификата (`insecure_skip_verify` и аналоги) |
-| `OldCipherAlgoAnalyzer` | устаревшие/небезопасные алгоритмы (MD5, SHA1, RC4, TLS1.0/1.1, JWT alg=none и т.д.) |
+| Анализатор                | Что ищет                                                                            |
+|---------------------------|-------------------------------------------------------------------------------------|
+| `HostAnalyzer`            | бинды на все интерфейсы (`0.0.0.0`) без ограничений                                 |
+| `PlaintextSecretAnalyzer` | пароли/токены/ключи в открытом виде вместо плейсхолдеров окружения                  |
+| `DebugModeAnalyzer`       | включённый debug-режим, verbose-логирование, открытые debug-эндпоинты               |
+| `TLSDisableAnalyzer`      | отключённую проверку TLS-сертификата (`insecure_skip_verify` и аналоги)             |
+| `OldCipherAlgoAnalyzer`   | устаревшие/небезопасные алгоритмы (MD5, SHA1, RC4, TLS1.0/1.1, JWT alg=none и т.д.) |
 
 Работает на произвольной JSON/YAML-структуре — без привязки к заранее известной схеме конфига.
