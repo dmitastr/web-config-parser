@@ -139,13 +139,13 @@ func (p *App) validateSource(src *models.Source) *models.Result {
 	if src.Content == nil {
 		content, err := p.readContent(src.Path)
 		if err != nil {
-			return &models.Result{Source: src.Path, Error: err}
+			return &models.Result{SourceName: src.Path, Error: err}
 		}
 		src.Content = content
 	}
 
 	findings, err := p.configAnalyzer.Analyze(src.Content)
-	return &models.Result{Source: src.Path, Findings: findings, Error: err}
+	return &models.Result{SourceName: src.Path, Findings: findings, Error: err}
 }
 
 func (p *App) readContent(path string) (any, error) {

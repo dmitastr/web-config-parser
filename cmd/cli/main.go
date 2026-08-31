@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"web-config-parser/internal/app"
@@ -39,7 +40,7 @@ func printReport(results []*models.Result) bool {
 	hasFindings := false
 
 	for _, result := range results {
-		fmt.Printf("####### %s #######\n", result.Source)
+		printSectionHeader(result.SourceName)
 
 		if result.Error != nil {
 			hasFindings = true
@@ -60,4 +61,12 @@ func printReport(results []*models.Result) bool {
 	}
 
 	return hasFindings
+}
+
+func printSectionHeader(name string) {
+	border := strings.Repeat("#", len(name)+10)
+
+	fmt.Println(border)
+	fmt.Printf("#### %s ####\n", name)
+	fmt.Println(border)
 }

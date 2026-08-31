@@ -8,6 +8,7 @@ const (
 	LevelMedium Level = "MEDIUM"
 )
 
+// Finding найденная потенциальная уязвимость, ее путь и значение в конфиге и вариант решения
 type Finding struct {
 	Level        Level  `json:"level"`
 	Path         string `json:"path"`
