@@ -95,5 +95,6 @@ curl -X POST 'http://localhost:8080/validate?format=json' \
 | `DebugModeAnalyzer`       | включённый debug-режим, verbose-логирование, открытые debug-эндпоинты               |
 | `TLSDisableAnalyzer`      | отключённую проверку TLS-сертификата (`insecure_skip_verify` и аналоги)             |
 | `OldCipherAlgoAnalyzer`   | устаревшие/небезопасные алгоритмы (MD5, SHA1, RC4, TLS1.0/1.1, JWT alg=none и т.д.) |
+| `PermissionAnalyzer`      | проверка слишком широких прав доступа к файловой системе                            |
 
 Работает на произвольной JSON/YAML-структуре — без привязки к заранее известной схеме конфига.
