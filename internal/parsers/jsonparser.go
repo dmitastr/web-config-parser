@@ -5,19 +5,18 @@ import (
 	"errors"
 
 	"github.com/Jeffail/gabs/v2"
-	"web-config-parser/internal/models"
 )
 
 type JsonParser struct {
 	container *gabs.Container
 }
 
-func (j *JsonParser) Parse(content []byte) (*models.Config, error) {
-	var config models.Config
+func (j *JsonParser) Parse(content []byte) (interface{}, error) {
+	var config interface{}
 	if err := json.Unmarshal(content, &config); err != nil {
 		return nil, err
 	}
-	return &config, nil
+	return config, nil
 }
 
 func (j *JsonParser) GetField(name string) (Parser, error) {
